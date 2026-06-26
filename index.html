@@ -29,6 +29,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 2rem 0; /* Added padding for scrolling */
         }
 
         .dashboard {
@@ -97,14 +98,6 @@
 
         .btn-primary:hover { background: var(--accent-hover); }
 
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-            width: 100%;
-        }
-
-        .btn-danger:hover { background: var(--danger-hover); }
-
         .link-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -124,16 +117,9 @@
             font-size: 1rem;
         }
 
-        .link-btn:hover:not(:disabled) {
+        .link-btn:hover {
             background: var(--bg-hover);
             transform: translateY(-2px);
-        }
-
-        .link-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            border-color: transparent;
-            background: var(--bg-input);
         }
 
         .divider {
@@ -141,9 +127,53 @@
             background: var(--border);
             margin: 1.5rem 0;
         }
+        
+        /* New Styles for Multiple Handles */
+        .handle-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
 
-        .hidden { display: none !important; }
+        .handle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
 
+        .handle-title {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .btn-remove {
+            background: transparent;
+            color: var(--danger);
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--danger);
+            font-size: 0.8rem;
+        }
+
+        .btn-remove:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .link-grid-half {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .link-grid-half .link-btn {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -151,50 +181,42 @@
     <div class="dashboard">
         <h1>📺 YouTube Hub</h1>
 
-        <div id="setup-section" class="section">
-            <div class="status-text">Enter your channel handle to unlock quick links</div>
-            <div class="input-group">
-                <input type="text" id="handle-input" placeholder="@yourhandle">
-                <button id="save-btn" class="btn-primary">Save</button>
-            </div>
-        </div>
-
-        <div id="profile-section" class="section hidden">
-            <div class="status-text">Active Handle: <strong id="display-handle" style="color: var(--accent);"></strong></div>
-            <button id="clear-btn" class="btn-danger">Clear Saved Handle</button>
-        </div>
-
-        <div class="divider"></div>
-
         <div class="link-grid section">
             <button class="link-btn" onclick="openLink('https://www.youtube.com')">🏠 Home</button>
             <button class="link-btn" onclick="openLink('https://www.youtube.com/feed/trending')">🔥 Trending</button>
             <button class="link-btn" onclick="openLink('https://www.youtube.com/feed/subscriptions')">📚 Subscriptions</button>
         </div>
 
-        <div class="link-grid" id="channel-links">
-            <button class="link-btn" id="btn-channel" disabled>👤 My Channel</button>
-            <button class="link-btn" id="btn-videos" disabled>▶️ My Videos</button>
+        <div class="divider"></div>
+
+        <div id="setup-section" class="section">
+            <div class="status-text">Add a channel handle to your list</div>
+            <div class="input-group">
+                <input type="text" id="handle-input" placeholder="@yourhandle">
+                <button id="save-btn" class="btn-primary">Add</button>
+            </div>
         </div>
+
+        <div id="handles-container">
+            </div>
     </div>
 
     <script>
         // DOM Elements
-        const setupSection = document.getElementById('setup-section');
-        const profileSection = document.getElementById('profile-section');
         const handleInput = document.getElementById('handle-input');
-        const displayHandle = document.getElementById('display-handle');
         const saveBtn = document.getElementById('save-btn');
-        const clearBtn = document.getElementById('clear-btn');
-        const btnChannel = document.getElementById('btn-channel');
-        const btnVideos = document.getElementById('btn-videos');
+        const handlesContainer = document.getElementById('handles-container');
+
+        // State Array
+        let savedHandles = [];
 
         // Initialize App
         function init() {
-            const savedHandle = localStorage.getItem('yt_handle');
-            if (savedHandle) {
-                updateUI(savedHandle);
+            const storedData = localStorage.getItem('yt_handles_list');
+            if (storedData) {
+                savedHandles = JSON.parse(storedData);
             }
+            renderHandles();
         }
 
         // Helper to open links in a new tab
@@ -202,35 +224,75 @@
             window.open(url, '_blank');
         }
 
-        // Update the UI state based on handle presence
-        function updateUI(handle) {
-            setupSection.classList.add('hidden');
-            profileSection.classList.remove('hidden');
-            displayHandle.textContent = handle;
-
-            // Enable and set channel buttons
-            btnChannel.disabled = false;
-            btnChannel.onclick = () => openLink(`https://www.youtube.com/${handle}`);
-            
-            btnVideos.disabled = false;
-            btnVideos.onclick = () => openLink(`https://www.youtube.com/${handle}/videos`);
+        // Save to LocalStorage
+        function saveToStorage() {
+            localStorage.setItem('yt_handles_list', JSON.stringify(savedHandles));
         }
 
-        // Reset the UI state
-        function resetUI() {
-            setupSection.classList.remove('hidden');
-            profileSection.classList.add('hidden');
-            handleInput.value = '';
-
-            // Disable channel buttons and remove click events
-            btnChannel.disabled = true;
-            btnChannel.onclick = null;
-            
-            btnVideos.disabled = true;
-            btnVideos.onclick = null;
+        // Remove a specific handle
+        function removeHandle(handleToRemove) {
+            savedHandles = savedHandles.filter(h => h !== handleToRemove);
+            saveToStorage();
+            renderHandles();
         }
 
-        // Event Listeners
+        // Render the UI for all saved handles
+        function renderHandles() {
+            handlesContainer.innerHTML = ''; // Clear current list
+
+            if (savedHandles.length === 0) {
+                handlesContainer.innerHTML = '<div class="status-text">No channels added yet.</div>';
+                return;
+            }
+
+            savedHandles.forEach(handle => {
+                // Create Card Container
+                const card = document.createElement('div');
+                card.className = 'handle-card';
+
+                // Create Header
+                const header = document.createElement('div');
+                header.className = 'handle-header';
+                
+                const title = document.createElement('div');
+                title.className = 'handle-title';
+                title.textContent = handle;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-remove';
+                removeBtn.textContent = 'Remove';
+                removeBtn.onclick = () => removeHandle(handle);
+
+                header.appendChild(title);
+                header.appendChild(removeBtn);
+
+                // Create Button Grid
+                const grid = document.createElement('div');
+                grid.className = 'link-grid-half';
+
+                const btnChannel = document.createElement('button');
+                btnChannel.className = 'link-btn';
+                btnChannel.textContent = '👤 Channel';
+                btnChannel.onclick = () => openLink(`https://www.youtube.com/${handle}`);
+
+                const btnVideos = document.createElement('button');
+                btnVideos.className = 'link-btn';
+                btnVideos.textContent = '▶️ Videos';
+                btnVideos.onclick = () => openLink(`https://www.youtube.com/${handle}/videos`);
+
+                grid.appendChild(btnChannel);
+                grid.appendChild(btnVideos);
+
+                // Assemble Card
+                card.appendChild(header);
+                card.appendChild(grid);
+
+                // Add to DOM
+                handlesContainer.appendChild(card);
+            });
+        }
+
+        // Add a new handle
         saveBtn.addEventListener('click', () => {
             let handle = handleInput.value.trim();
             if (handle) {
@@ -238,16 +300,20 @@
                 if (!handle.startsWith('@')) {
                     handle = '@' + handle;
                 }
-                localStorage.setItem('yt_handle', handle);
-                updateUI(handle);
+                
+                // Prevent exact duplicates
+                if (!savedHandles.includes(handle)) {
+                    savedHandles.push(handle);
+                    saveToStorage();
+                    renderHandles();
+                } else {
+                    alert('This handle is already in your list!');
+                }
+                
+                handleInput.value = ''; // Clear input field
             } else {
                 alert('Please enter a valid handle.');
             }
-        });
-
-        clearBtn.addEventListener('click', () => {
-            localStorage.removeItem('yt_handle');
-            resetUI();
         });
 
         // Allow pressing Enter to save
