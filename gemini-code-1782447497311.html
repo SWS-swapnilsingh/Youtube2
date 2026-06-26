@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern YouTube Hub</title>
+    <style>
+        /* CSS Variables for easy theme management */
+        :root {
+            --bg-main: #0f0f0f;
+            --bg-card: #212121;
+            --bg-input: #121212;
+            --bg-hover: #3d3d3d;
+            --accent: #3ea6ff;
+            --accent-hover: #65b8ff;
+            --danger: #ff4e45;
+            --danger-hover: #ff746d;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --border: #3d3d3d;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .dashboard {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-main);
+        }
+
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-danger:hover { background: var(--danger-hover); }
+
+        .link-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .link-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            text-align: left;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            font-size: 1rem;
+        }
+
+        .link-btn:hover:not(:disabled) {
+            background: var(--bg-hover);
+            transform: translateY(-2px);
+        }
+
+        .link-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: transparent;
+            background: var(--bg-input);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.5rem 0;
+        }
+
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>📺 YouTube Hub</h1>
+
+        <div id="setup-section" class="section">
+            <div class="status-text">Enter your channel handle to unlock quick links</div>
+            <div class="input-group">
+                <input type="text" id="handle-input" placeholder="@yourhandle">
+                <button id="save-btn" class="btn-primary">Save</button>
+            </div>
+        </div>
+
+        <div id="profile-section" class="section hidden">
+            <div class="status-text">Active Handle: <strong id="display-handle" style="color: var(--accent);"></strong></div>
+            <button id="clear-btn" class="btn-danger">Clear Saved Handle</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="link-grid section">
+            <button class="link-btn" onclick="openLink('https://www.youtube.com')">🏠 Home</button>
+            <button class="link-btn" onclick="openLink('https://www.youtube.com/feed/trending')">🔥 Trending</button>
+            <button class="link-btn" onclick="openLink('https://www.youtube.com/feed/subscriptions')">📚 Subscriptions</button>
+        </div>
+
+        <div class="link-grid" id="channel-links">
+            <button class="link-btn" id="btn-channel" disabled>👤 My Channel</button>
+            <button class="link-btn" id="btn-videos" disabled>▶️ My Videos</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const setupSection = document.getElementById('setup-section');
+        const profileSection = document.getElementById('profile-section');
+        const handleInput = document.getElementById('handle-input');
+        const displayHandle = document.getElementById('display-handle');
+        const saveBtn = document.getElementById('save-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const btnChannel = document.getElementById('btn-channel');
+        const btnVideos = document.getElementById('btn-videos');
+
+        // Initialize App
+        function init() {
+            const savedHandle = localStorage.getItem('yt_handle');
+            if (savedHandle) {
+                updateUI(savedHandle);
+            }
+        }
+
+        // Helper to open links in a new tab
+        function openLink(url) {
+            window.open(url, '_blank');
+        }
+
+        // Update the UI state based on handle presence
+        function updateUI(handle) {
+            setupSection.classList.add('hidden');
+            profileSection.classList.remove('hidden');
+            displayHandle.textContent = handle;
+
+            // Enable and set channel buttons
+            btnChannel.disabled = false;
+            btnChannel.onclick = () => openLink(`https://www.youtube.com/${handle}`);
+            
+            btnVideos.disabled = false;
+            btnVideos.onclick = () => openLink(`https://www.youtube.com/${handle}/videos`);
+        }
+
+        // Reset the UI state
+        function resetUI() {
+            setupSection.classList.remove('hidden');
+            profileSection.classList.add('hidden');
+            handleInput.value = '';
+
+            // Disable channel buttons and remove click events
+            btnChannel.disabled = true;
+            btnChannel.onclick = null;
+            
+            btnVideos.disabled = true;
+            btnVideos.onclick = null;
+        }
+
+        // Event Listeners
+        saveBtn.addEventListener('click', () => {
+            let handle = handleInput.value.trim();
+            if (handle) {
+                // Auto-prepend '@' if the user forgets it
+                if (!handle.startsWith('@')) {
+                    handle = '@' + handle;
+                }
+                localStorage.setItem('yt_handle', handle);
+                updateUI(handle);
+            } else {
+                alert('Please enter a valid handle.');
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            localStorage.removeItem('yt_handle');
+            resetUI();
+        });
+
+        // Allow pressing Enter to save
+        handleInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveBtn.click();
+            }
+        });
+
+        // Run initialization on load
+        init();
+    </script>
+
+</body>
+</html>
